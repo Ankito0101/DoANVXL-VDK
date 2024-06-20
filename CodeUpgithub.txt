@@ -1,0 +1,298 @@
+$NOMOD51
+$INCLUDE (8051.MCU)
+;========================================================
+org   0000h
+;cac bien khai bao ban dau
+   XUNG_L1 	BIT P0.0
+   DL_L1 	BIT P0.1
+   CHOT_L1 	BIT P0.2
+   XUNG_L2 	BIT P0.3
+   DL_L2	BIT P0.4
+   XUNG_L3	BIT P0.5
+   DL_L3	BIT P0.6
+   XUNG_L4	BIT P1.0
+   DL_L4	BIT P1.1
+   XUNG_R1 	BIT P2.1
+   DL_R1 	BIT P2.2
+   XUNG_R2 	BIT P2.3
+   DL_R2 	BIT P2.4
+   XUNG_R3 	BIT P2.5
+   DL_R3 	BIT P2.6  
+   XUNG_R4 	BIT P1.2
+   DL_R4 	BIT P1.3
+;===========================
+   ;chuyenHU 	BIT P3.2
+   ;tangtocHU 	BIT P3.3
+
+jmp   Start
+org 0003h
+int0_isr:
+   CPL P3.7
+   INC R3
+   CJNE R3,#4,exit_int0
+      mov R3,#1
+   exit_int0:
+RETI
+;============
+org 0013h
+   int1_isr:   
+      INC R7 ; Tang giá tri trong R7
+      INC R7
+      INC R7
+      CPL P3.7
+      CJNE R7, #1Eh, skip_reset
+      MOV R7, #03h 
+   skip_reset:
+   RETI
+;==================================================
+org 0100h
+Start:
+      ;R0 chinh step	
+      ;R1 dung dem step
+      ;R2 dung de dem 8 bit doc
+      ;R3 su dung de chinh toc do
+      ;R4 delay
+      ;R5 d? 6 dong thi doi HU
+      ;R6 khoang cach cac HU
+      ;R7 dang su dung de lam nut chuyen HU
+      ;lay dia chi dau tien cua MA =======thay doi HU bang cach thay MA=MA2======
+      setb EA
+      setb EX1
+      setb EX0
+      setb IT0
+      setb IT1
+
+      setb P3.2
+      setb P3.3
+      clr p3.7
+      mov R3,#1 ;toc do
+      
+LOOP_HU:
+;cai nay la set up HU dau tien
+mov dptr, #HU1_1
+mov R7, DPH
+MOV R6,#3  ;doi chuyen HU
+
+MAIN:
+MOV R5,#6
+      MOV R0,#6	;co 6 gia tri cua MA
+      MOV R1,#0
+      
+      DOC_MA:	; DOC TUNG GIA TRI CUA MANG
+	 ACALL LAY_GT_GAN_SOBIT8
+	 ACALL DOC_BIT_L1 ;goi ham doc BIT L1
+	 INC R1	;R1++
+	 
+	 ACALL LAY_GT_GAN_SOBIT8
+	 ACALL DOC_BIT_L2 ;;goi ham doc BIT L2
+	 INC R1	;R1++
+	 
+	 ACALL LAY_GT_GAN_SOBIT8
+	 ACALL DOC_BIT_R1 ;;goi ham doc BIT R1
+	 INC R1	;R1++
+	 
+	 ACALL LAY_GT_GAN_SOBIT8
+	 ACALL DOC_BIT_R2 ;goi ham doc BIT R2
+	 INC R1	;R1++
+	 
+	 ACALL LAY_GT_GAN_SOBIT8
+	 ACALL DOC_BIT_L3 ;goi ham doc BIT L3
+	 INC R1	;R1++
+	 
+	 ACALL LAY_GT_GAN_SOBIT8
+	 ACALL DOC_BIT_L4 ;goi ham doc BIT L4
+	 INC R1	;R1++
+	 
+	 ACALL LAY_GT_GAN_SOBIT8
+	 ACALL DOC_BIT_R3 ;goi ham doc BIT R3
+	 INC R1	;R1++
+	 
+	 ACALL LAY_GT_GAN_SOBIT8
+	 ACALL DOC_BIT_R4 ;goi ham doc BIT R4
+	 INC R1	;R1++
+	 
+	 
+	 ACALL CHOT_ALL ;==========ham chot
+	 
+	 
+	 ACALL DELAY
+      DJNZ R0,DOC_MA
+   DJNZ R5, Doi_dia_chi_DB
+ljmp MAIN
+;=================================================
+
+;=================================================
+LAY_GT_GAN_SOBIT8:
+   MOV A,R1
+   MOVC A, @A+dptr	
+   MOV R2,#8
+RET
+;=====================================================
+
+;====================================================================
+Doi_dia_chi_DB:
+    MOV  DPL, #00h      ;Ðat byte thap cua DPTR ve 0      
+    INC DPH		;tang gia tri HIgh dia chi dptr
+    DJNZ R6, MAIN		;--R6, néu R6 chua =0 thi nhay len main, neu R6=0 thì lap lai HU
+    
+    MOV R6,#3 		; doi chuyen HU
+    MOV DPH, R7
+    jmp MAIN
+RET
+;====================================================================
+DOC_BIT_L1:		;DOC TUNG BIT
+	    CLR C
+	    RLC A	;Quay trai thanh ghi qua C
+	    MOV DL_L1,C
+	    SETB XUNG_L1
+	    CLR XUNG_L1
+	 DJNZ R2, DOC_BIT_L1;
+	 RET
+DOC_BIT_L2:		;DOC TUNG BIT
+	    CLR C
+	    RLC A	;Quay trai thanh ghi qua C
+	    MOV DL_L2,C
+	    SETB XUNG_L2
+	    CLR XUNG_L2
+	 DJNZ R2, DOC_BIT_L2;
+	 RET
+DOC_BIT_L3:		;DOC TUNG BIT
+	    CLR C
+	    RLC A	;Quay trai thanh ghi qua C
+	    MOV DL_L3,C
+	    SETB XUNG_L3
+	    CLR XUNG_L3
+	 DJNZ R2, DOC_BIT_L3;
+	 RET
+DOC_BIT_L4:		;DOC TUNG BIT
+	    CLR C
+	    RLC A	;Quay trai thanh ghi qua C
+	    MOV DL_L4,C
+	    SETB XUNG_L4
+	    CLR XUNG_L4
+	 DJNZ R2, DOC_BIT_L4;
+	 RET
+DOC_BIT_R1:		;DOC TUNG BIT
+	    CLR C
+	    RLC A	;Quay trai thanh ghi qua C
+	    MOV DL_R1,C
+	    SETB XUNG_R1
+	    CLR XUNG_R1
+	 DJNZ R2, DOC_BIT_R1;
+	 RET
+DOC_BIT_R2:		;DOC TUNG BIT
+	    CLR C
+	    RLC A	;Quay trai thanh ghi qua C
+	    MOV DL_R2,C
+	    SETB XUNG_R2
+	    CLR XUNG_R2
+	 DJNZ R2, DOC_BIT_R2;
+	 RET
+DOC_BIT_R3:		;DOC TUNG BIT
+	    CLR C
+	    RLC A	;Quay trai thanh ghi qua C
+	    MOV DL_R3,C
+	    SETB XUNG_R3
+	    CLR XUNG_R3
+	 DJNZ R2, DOC_BIT_R3;
+	 RET
+DOC_BIT_R4:		;DOC TUNG BIT
+	    CLR C
+	    RLC A	;Quay trai thanh ghi qua C
+	    MOV DL_R4,C
+	    SETB XUNG_R4
+	    CLR XUNG_R4
+	 DJNZ R2, DOC_BIT_R4;
+	 RET
+;===================================================================
+
+;===================================================================
+CHOT_ALL:
+   SETB CHOT_L1
+   CLR CHOT_L1
+RET
+;===================================================================
+DELAY:
+    MOV TMOD, #01H    ; Timer 0, Mode 1 (16-bit Timer)
+    mov A,R3
+    mov R4,A
+    lap_delay:
+    MOV TH0, #00h  
+    MOV TL0, #00h 
+    SETB TR0           ; Start 
+       JNB TF0, $      ; 
+       CLR TR0            ; Stop Timer 0
+       CLR TF0            ; Clear Timer 0 Overflow Flag
+   djnz R4, lap_delay
+RET
+;===================================================================
+org 0300h
+HU1_1: DB 0FFh,0FFh,0FFh,0FFh,00h,00h,00h,00h,   0FFh,0FFh,0FFh,0FFh,00h,00h,00h,00h,   0FFh,0FFh,0FFh,0FFh,00h,00h,00h,00h,   00h,00h,00h,00h,0FFh,0FFh,0FFh,0FFh,   00h,00h,00h,00h,0FFh,0FFh,0FFh,0FFh,   00h,00h,00h,00h,0FFh,0FFh,0FFh,0FFh
+org 0400h
+HU2_1: DB 0FFh,0FFh,0FFh,0FFh,00h,00h,00h,00h,   0FFh,0FFh,0FFh,0FFh,00h,00h,00h,00h,   0FFh,0FFh,0FFh,0FFh,00h,00h,00h,00h,   00h,00h,00h,00h,0FFh,0FFh,0FFh,0FFh,   00h,00h,00h,00h,0FFh,0FFh,0FFh,0FFh,   00h,00h,00h,00h,0FFh,0FFh,0FFh,0FFh
+org 0500h
+HU3_1: DB 0FFh,0FFh,0FFh,0FFh,00h,00h,00h,00h,   0FFh,0FFh,0FFh,0FFh,00h,00h,00h,00h,   0FFh,0FFh,0FFh,0FFh,00h,00h,00h,00h,   00h,00h,00h,00h,0FFh,0FFh,0FFh,0FFh,   00h,00h,00h,00h,0FFh,0FFh,0FFh,0FFh,   00h,00h,00h,00h,0FFh,0FFh,0FFh,0FFh
+;====================================
+org 0600h
+HU1_2: DB 01h,00h,00h,00h,01h,00h,00h,00h,   07h,00h,00h,0c0h,07h,00h,00h,0c0h,   01Ch,00h,00h,70h,01Ch,00h,00h,70h, 70h,00h,00h,1ch,70h,00h,00h,1ch,  0c0h,01h,00h,07h,0c0h,01h,00h,07h,   00h,07h,0c0h,01h,00h,07h,0c0h,01h
+org 0700h
+HU2_2: DB 00h,1ch,70h,00h,00h,1ch,70h,00h,   00h,70h,1ch,00h,00h,70h,1ch,00h,   00h,0c0h,07h,00h,00h,0c0h,07h,00h,  00h,00h,01h,00h,00h,00h,01h,00h,      00h,0c0h,07h,00h,00h,0c0h,07h,00h,    00h,70h,1ch,00h,00h,70h,1ch,00h
+org 0800h
+HU3_2: DB 00h,1ch,70h,00h,00h,1ch,70h,00h,    00h,07h,0c0h,01h,00h,07h,0c0h,01h,  0c0h,01h,00h,07h,0c0h,01h,00h,07h, 70h,00h,00h,1ch,70h,00h,00h,1ch,     01Ch,00h,00h,70h,01Ch,00h,00h,70h,      07h,00h,00h,0c0h,07h,00h,00h,0c0h
+;===================================================================
+org 0900h
+HU1_3: DB 0FFh,0FFh,01h,00h,01h,00h,0FFh,0FFh,   0FFh,0FFh,01h,00h,01h,00h,0FFh,0FFh,   0FFh,0FFh,01h,00h,01h,00h,0FFh,0FFh,   0FFh,0FFh,01h,00h,01h,00h,0FFh,0FFh,   01h,00h,0FFh,0FFh,0FFh,0FFh,01h,00h,   01h,00h,0FFh,0FFh,0FFh,0FFh,01h,00h
+org 0A00h
+HU2_3: DB 01h,00h,0FFh,0FFh,0FFh,0FFh,01h,00h,   01h,00h,0FFh,0FFh,0FFh,0FFh,01h,00h,   0FFh,0FFh,01h,00h,01h,00h,0FFh,0FFh,   0FFh,0FFh,01h,00h,01h,00h,0FFh,0FFh,   0FFh,0FFh,01h,00h,01h,00h,0FFh,0FFh,   0FFh,0FFh,01h,00h,01h,00h,0FFh,0FFh
+org 0B00h
+HU3_3: DB 01h,00h,0FFh,0FFh,0FFh,0FFh,01h,00h,   01h,00h,0FFh,0FFh,0FFh,0FFh,01h,00h,   01h,00h,0FFh,0FFh,0FFh,0FFh,01h,00h,   01h,00h,0FFh,0FFh,0FFh,0FFh,01h,00h,   00h,00h,00h,00h,00h,00h,00h,00h,   00h,00h,00h,00h,00h,00h,00h,00h
+;===================================================================
+org 0C00h
+HU1_4: DB 00h,00h,01h,00h,01h,00h,00h,00h,   00h,80h,03h,00h,03h,00h,00h,80h,   00h,0C0h,07h,00h,07h,00h,00h,0C0h,   00h,0E0h,0Eh,00h,0Eh,00h,00h,0E0h,   00h,70h,1Ch,00h,1Ch,00h,00h,70h,   00h,38h,38h,00h,38h,00h,00h,38h
+org 0D00h
+HU2_4: DB 00h,1Ch,70h,00h,70h,00h,00h,1Ch,   00h,0Eh,0E0h,00h,0E0h,00h,00h,0Eh,   00h,07h,0C0h,01h,0C0h,01h,00h,07h,   80h,03h,80h,03h,80h,03h,80h,03h,   0C0h,01h,00h,07h,00h,07h,0C0h,00h,   0E0h,00h,00h,0Eh,00h,0Eh,0E0h,00h
+org 0E00h
+HU3_4: DB 70h,00h,00h,1Ch,00h,1Ch,70h,00h,   38h,00h,00h,38h,00h,38h,38h,00h,   1Ch,00h,00h,70h,00h,70h,1Ch,00h,   0E0h,00h,00h,0E0h,00h,0E0h,0Eh,00h,   07h,00h,00h,0C0h,00h,0C0h,07h,00h,   03h,00h,00h,80h,00h,80h,30h,00h
+;===================================================================
+org 0F00h
+HU1_5: DB 01h,00h,00h,80h,01h,00h,00h,80h,   03h,00h,00h,0C0h,03h,00h,00h,0C0h,   07h,00h,00h,0E0h,07h,00h,00h,0E0h,   0Fh,00h,00h,0F0h,0Fh,00h,00h,0F0h,   1Fh,00h,00h,0F8h,1Fh,00h,00h,0F8h,   3Fh,00h,00h,0FCh,3Fh,00h,00h,0FCh
+org 1000h
+HU2_5: DB 7Fh,00h,00h,0FEh,7Fh,00h,00h,0FEh,   0FFh,00h,00h,0FFh,0FFh,00h,00h,0FFh,   0FFh,01h,80h,0FFh,0FFh,01h,80h,0FFh,   0FFh,03h,0C0h,0FFh,0FFh,03h,0C0h,0FFh,   0FFh,07h,0E0h,0FFh,0FFh,07h,0E0h,0FFh,   0FFh,0Fh,0F0h,0FFh,0FFh,0Fh,0F0h,0FFh
+org 1100h
+HU3_5: DB 0FFh,1Fh,0F8h,0FFh,0FFh,1Fh,0F8h,0FFh,   0FFh,3Fh,0FCh,0FFh,0FFh,3Fh,0FCh,0FFh,   0FFh,7Fh,0FEh,0FFh,0FFh,7Fh,0FEh,0FFh,   0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh, 0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh, 0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+;===================================================================
+org 1200h
+HU1_6: DB 01h,00h,01h,00h,01h,00h,01h,00h,   03h,80h,03h,80h,03h,80h,03h,80h,   07h,0C0h,07h,0C0h,07h,0C0h,07h,0C0h,   0Eh,0E0h,0Eh,0E0h,0Eh,0E0h,0Eh,0E0h,   1Ch,70h,1Ch,70h,1Ch,70h,1Ch,70h,   38h,38h,38h,38h,38h,38h,38h,38h
+org 1300h
+HU2_6: DB 70h,1Ch,70h,1Ch,70h,1Ch,70h,1Ch,   0E0h,0Eh,0E0h,0Eh,0E0h,0Eh,0E0h,0Eh,   0C0h,07h,0C0h,07h,0C0h,07h,0C0h,07h,   80h,03h,80h,03h,80h,03h,80h,03h,   00h,00h,00h,00h,00h,00h,00h,00h,   00h,00h,00h,00h,00h,00h,00h,00h
+org 1400h
+HU3_6: DB 00h,00h,00h,00h,00h,00h,00h,00h,   00h,00h,00h,00h,00h,00h,00h,00h,   00h,00h,00h,00h,00h,00h,00h,00h,   00h,00h,00h,00h,00h,00h,00h,00h,   00h,00h,00h,00h,00h,00h,00h,00h,   00h,00h,00h,00h,00h,00h,00h,00h
+;===================================================================
+org 1500h
+HU1_7: DB 01h,00h,00h,00h,01h,00h,00h,80h,         0fh,00h,00h,00h,01h,00h,00h,0f0h,      3fh,00h,00h,00h,01h,00h,00h,0fch,    0ffh,00h,00h,00h,01h,00h,00h,0ffh,      0ffh,03h,00h,00h,01h,00h,0c0h,0ffh,      0ffh,0fh,00h,00h,01h,00h,0f0h,0ffh
+org 1600h
+HU2_7: DB 0ffh,3fh,00h,00h,01h,00h,0fch,0ffh,      0ffh,0ffh,01h,00h,01h,00h,0ffh,0ffh,   0ffh,0ffh,01h,00h,01h,00h,0ffh,0ffh,   0ffh,0ffh,01h,00h,01h,00h,0ffh,0ffh,   0ffh,0ffh,01h,00h,01h,00h,0ffh,0ffh,   01h,00h,0ffh,0ffh,0ffh,0ffh,01h,00h
+org 1700h
+HU3_7: DB 01h,00h,0ffh,0ffh,0ffh,0ffh,01h,00h,   01h,00h,0ffh,0ffh,0ffh,0ffh,01h,00h,   01h,00h,0ffh,0ffh,0ffh,0ffh,01h,00h,   0ffh,0ffh,01h,00h,01h,00h,0ffh,0ffh,     0ffh,0ffh,01h,00h,01h,00h,0ffh,0ffh,    0ffh,0ffh,01h,00h,01h,00h,0ffh,0ffh
+;===================================================================
+org 1800h
+HU1_8: DB 00h,80h,01h,00h,01h,00h,00h,80h,  00h,0e0h,01h,00h,01h,00h,00h,0e0h,     00h,0f8h,01h,00h,01h,00h,00h,0f8h,   00h,0ffh,01h,00h,01h,00h,00h,0ffh,      80h,00h,00h,00h,00h,00h,80h,00h,      0e0h,00h,00h,00h,00h,00h,0e0h,00h
+org 1900h
+HU2_8: DB 0f0h,00h,00h,00h,00h,00h,0f0h,00h,    0fch,00h,00h,00h,00h,00h,0fch,00h,      0ffh,00h,00h,00h,00h,00h,0ffh,00h,  01h,00h,00h,0c0h,00h,0c0h,01h,00h,      01h,00h,00h,0f0h,00h,0f0h,01h,00h,     01h,00h,00h,0fch,00h,0fch,01h,00h
+org 1A00h
+HU3_8: DB 01h,00h,00h,0ffh,00h,0ffh,01h,00h,     00h,00h,80h,00h,80h,00h,00h,00h,      00h,00h,0e0h,00h,0e0h,00h,00h,00h,     00h,00h,0f0h,00h,0f0h,00h,00h,00h,      00h,00h,0fch,00h,0fch,00h,00h,00h,       00h,00h,0ffh,00h,0ffh,00h,00h,00h 
+;===================================================================
+org 1B00h
+HU1_9: DB 03h,00h,00h,80h,03h,00h,00h,80h,      0fh,00h,00h,0e0h,0fh,00h,00h,0e0h,      3fh,00h,00h,0f8h,3fh,00h,00h,0f8h,   0ffh,00h,00h,0ffh,0ffh,00h,00h,0ffh,      3fh,00h,00h,0fch,0ffh,03h,0c0h,0ffh,      0fh,00h,00h,0f0h,0ffh,0fh,0f0h,0ffh
+org 1C00h
+HU2_9: DB 03h,00h,00h,0c0h,0ffh,3fh,0fch,0ffh,    00h,00h,00h,00h,0ffh,0ffh,0ffh,0ffh,   00h,00h,00h,00h,0ffh,0ffh,0ffh,0ffh,   00h,00h,00h,00h,0ffh,0ffh,0ffh,0ffh,   00h,00h,00h,00h,0ffh,0ffh,0ffh,0ffh,     0ffh,0ffh,0ffh,0ffh,00h,00h,00h,00h
+org 1D00h
+HU3_9: DB 0ffh,0ffh,0ffh,0ffh,00h,00h,00h,00h,   0ffh,0ffh,0ffh,0ffh,00h,00h,00h,00h,   0ffh,0ffh,0ffh,0ffh,00h,00h,00h,00h,   00h,00h,00h,00h,0ffh,0ffh,0ffh,0ffh,   00h,00h,00h,00h,0ffh,0ffh,0ffh,0ffh,       00h,00h,00h,00h,0ffh,0ffh,0ffh,0ffh       
+;====================================================================
+org 1E00h
+HU1_10: DB 01h,00h,00h,00h,03h,00h,00h,80h,   07h,00h,00h,0c0h,0fh,00h,00h,0e0h,       01Ch,00h,00h,70h,3fh,00h,00h,0f8h,    0e0h,00h,00h,0eh,0ffh,00h,00h,0ffh,     80h,03h,80h,03h,0ffh,03h,0c0h,0ffh,      00h,0eh,0e0h,00h,0ffh,0fh,0f0h,0ffh  
+org 1F00h
+HU2_10: DB 00h,38h,38h,00h,0ffh,3fh,0fch,0ffh,      00h,0e0h,0eh,00h,0ffh,0ffh,0ffh,0ffh,      00h,80h,03h,00h,0ffh,0ffh,0ffh,0ffh, 03h,00h,00h,80h,01h,00h,00h,00h,      0fh,00h,00h,0e0h,07h,00h,00h,0c0h,     3fh,00h,00h,0f8h,01Ch,00h,00h,70h 
+org 2000h
+HU3_10: DB 0ffh,00h,00h,0ffh,0e0h,00h,00h,0eh,     0ffh,03h,0c0h,0ffh,80h,03h,80h,03h,      0ffh,0fh,0f0h,0ffh,00h,0eh,0e0h,00h,  0ffh,3fh,0fch,0ffh,00h,38h,38h,00h,      0ffh,0ffh,0ffh,0ffh,00h,0e0h,0eh,00h,   0ffh,0ffh,0ffh,0ffh,00h,80h,03h,00h
+END
